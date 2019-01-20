@@ -295,7 +295,9 @@ public class Simulator implements Runnable {
 
         // Open ports
         try {
+            System.out.println("Connecting...");
             autopilotMavLinkPort.open();
+            System.out.println("Connected!");
         } catch (IOException e) {
             System.out.println("ERROR: Failed to open MAV port: " + e.getLocalizedMessage());
             shutdown = true;
@@ -647,6 +649,7 @@ public class Simulator implements Runnable {
                         }
                         autopilotIpAddress = list[0];
                         autopilotPort = Integer.parseInt(list[1]);
+                        System.out.println("tcp addr: " + autopilotIpAddress + " port: " + autopilotPort);
                     } catch (NumberFormatException e) {
                         System.err.println("Expected: " + USAGE_STRING + ", got: " + e.toString());
                         return;

@@ -6,20 +6,15 @@ import me.drton.jmavlib.mavlink.MAVLinkMessage;
 
 import java.io.IOException;
 import java.net.*;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
 import java.util.*;
 
-/**
- * User: ton Date: 02.12.13 Time: 20:56
- */
+
 public class TCPMavLinkPort extends MAVLinkPort {
     private MAVLinkSchema schema;
     private ByteBuffer rxBuffer = ByteBuffer.allocate(8192);
     private InetSocketAddress inetSocketAddress = null;
-    private ServerSocketChannel serverSocketChannel = null;
     private SocketChannel socketChannel = null;
     private MAVLinkStream stream;
     private boolean debug = false;
@@ -51,33 +46,28 @@ public class TCPMavLinkPort extends MAVLinkPort {
         this.debug = debug;
     }
 
-    public void setup(String address, int port) throws UnknownHostException, IOException {
-        inetSocketAddress = new InetSocketAddress(port);
+    public void setup(String host, int port) throws UnknownHostException, IOException {
+        // lookup all possible addresses for the target host
+        InetAddress[] allAddr = Inet6Address.getAllByName(host);
+        InetAddress trueAddr = allAddr[0];
+
+        for (InetAddress addr : allAddr) {
+            //attempt to find at least one ipv6 address
+            if (addr instanceof Inet6Address) {
+                trueAddr = addr;
+            }
+        }
+        System.out.println("Connect to: [" + trueAddr + "] : " + port);
+
+        inetSocketAddress = new InetSocketAddress(trueAddr, port);
     }
 
     public void open() throws IOException {
-        serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.socket().bind(inetSocketAddress);
-        accept();
+        socketChannel = SocketChannel.open();
+        socketChannel.connect(inetSocketAddress);
+
         stream = new MAVLinkStream(schema, socketChannel);
         stream.setDebug(true);
-    }
-
-    private void accept() {
-        if (debug) {
-            System.out.println("Waiting to accept TCP connection");
-        }
-
-        try {
-            socketChannel = serverSocketChannel.accept();
-            socketChannel.configureBlocking(false);
-            socketChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);
-        } catch (IOException ignored) {
-        }
-
-        if (debug) {
-            System.out.println("TCP connection accepted");
-        }
     }
 
     private void reset() {
@@ -95,12 +85,12 @@ public class TCPMavLinkPort extends MAVLinkPort {
 
     @Override
     public void close() throws IOException {
-        serverSocketChannel.close();
+        socketChannel.close();
     }
 
     @Override
     public boolean isOpened() {
-        return serverSocketChannel != null && serverSocketChannel.isOpen();
+        return socketChannel != null && socketChannel.isOpen();
     }
 
     @Override
