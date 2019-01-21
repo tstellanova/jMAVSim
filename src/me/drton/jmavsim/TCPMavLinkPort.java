@@ -17,7 +17,7 @@ public class TCPMavLinkPort extends MAVLinkPort {
     private InetSocketAddress inetSocketAddress = null;
     private SocketChannel socketChannel = null;
     private MAVLinkStream stream;
-    private boolean debug = false;
+    private boolean debug = true;
 
     private boolean monitorMessage = false;
     private HashSet<Integer> monitorMessageIDs;
@@ -65,9 +65,11 @@ public class TCPMavLinkPort extends MAVLinkPort {
     public void open() throws IOException {
         socketChannel = SocketChannel.open();
         socketChannel.connect(inetSocketAddress);
+        // streaming code expects the channel to be nonblocking
+        socketChannel.configureBlocking(false);
 
         stream = new MAVLinkStream(schema, socketChannel);
-        stream.setDebug(true);
+        stream.setDebug(debug);
     }
 
     private void reset() {
@@ -154,7 +156,7 @@ public class TCPMavLinkPort extends MAVLinkPort {
                     break;
                 }
                 if (debug) {
-                    System.out.println("[update] msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
+                    System.out.println("[tcp] recvd msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
                 }
                 IndicateReceivedMessage(msg.getMsgType());
                 sendMessage(msg);
