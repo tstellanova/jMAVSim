@@ -18,7 +18,7 @@ import java.util.TimeZone;
  * MAVLinkHILSystem should have the same sysID as the autopilot, but different componentId.
  */
 public class MAVLinkHILSystem extends MAVLinkSystem {
-    private Simulator simulator;
+    private TimeSource timeSource;
     private AbstractVehicle vehicle;
     private boolean gotHeartBeat = false;
     private boolean inited = false;
@@ -30,7 +30,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
     private long lastHeartbeatMs = 0;
 
     /**
-     * Create MAVLinkHILSimulator, MAVLink system that sends simulated sensors to autopilot and passes controls from
+     * System that sends simulated sensors to autopilot and passes controls from
      * autopilot to simulator
      *
      * @param sysId       SysId of simulator should be the same as autopilot
@@ -42,8 +42,8 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         this.vehicle = vehicle;
     }
 
-    public void setSimulator(Simulator simulator) {
-        this.simulator = simulator;
+    public void setTimeSource(TimeSource source) {
+        this.timeSource = source;
     }
 
     public boolean gotHilActuatorControls() {
@@ -53,7 +53,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
     @Override
     public void handleMessage(MAVLinkMessage msg) {
         super.handleMessage(msg);
-        long t = simulator.getSimMillis();
+        long t = timeSource.getSimMillis();
         if ("HIL_ACTUATOR_CONTROLS".equals(msg.getMsgName())) {
             gotHilActuatorControls = true;
             List<Double> control = new ArrayList<Double>();
@@ -74,7 +74,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
                 }
             }
 
-            simulator.advanceTime();
+            timeSource.advanceTime();
 
             vehicle.setControl(control);
 
@@ -109,7 +109,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
                 }
             }
         } else if ("HEARTBEAT".equals(msg.getMsgName())) {
-            long realMs = simulator.getRealMillis();
+            long realMs = timeSource.getRealMillis();
 
             // We timeout after 3 seconds and do a reset.
             long diffMs = realMs - lastHeartbeatMs;
@@ -149,7 +149,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
 
     public void initMavLink() {
         if (vehicle.getSensors().getGPSStartTime() == -1) {
-            vehicle.getSensors().setGPSStartTime(simulator.getSimMillis() + 1000);
+            vehicle.getSensors().setGPSStartTime(timeSource.getSimMillis() + 1000);
         }
         stopped = false;
         inited = true;

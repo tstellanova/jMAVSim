@@ -2,35 +2,30 @@ package me.drton.jmavsim;
 
 import me.drton.jmavlib.geo.LatLonAlt;
 import me.drton.jmavlib.mavlink.MAVLinkSchema;
-import me.drton.jmavsim.Visualizer3D.ViewTypes;
-import me.drton.jmavsim.Visualizer3D.ZoomModes;
+//import me.drton.jmavsim.Visualizer3D.ViewTypes;
+//import me.drton.jmavsim.Visualizer3D.ZoomModes;
 import me.drton.jmavsim.vehicle.AbstractMulticopter;
 import me.drton.jmavsim.vehicle.Quadcopter;
-
 import org.xml.sax.SAXException;
 
-import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
+//import javax.swing.*;
 import javax.vecmath.Matrix3d;
 import javax.vecmath.Vector3d;
 import javax.xml.parsers.ParserConfigurationException;
-
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.Math;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Scanner;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledFuture;;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
-/**
- * User: ton Date: 26.11.13 Time: 12:33
- */
-public class Simulator implements Runnable, TimeSource {
+;
+
+public class Headless implements Runnable, TimeSource {
 
     private static enum Port {
         SERIAL,
@@ -47,8 +42,8 @@ public class Simulator implements Runnable, TimeSource {
     public static boolean   GUI_SHOW_REPORT_PANEL = false;  // start with report panel showing
     public static boolean   GUI_START_MAXIMIZED   = false;  // start with gui in maximized window
     public static boolean   GUI_ENABLE_AA         = true;   // anti-alias on 3D scene
-    public static ViewTypes GUI_START_VIEW        = ViewTypes.VIEW_STATIC;
-    public static ZoomModes GUI_START_ZOOM        = ZoomModes.ZOOM_DYNAMIC;
+//    public static ViewTypes GUI_START_VIEW        = ViewTypes.VIEW_STATIC;
+//    public static ZoomModes GUI_START_ZOOM        = ZoomModes.ZOOM_DYNAMIC;
     public static boolean   LOG_TO_STDOUT         =
         true;   // send System.out messages to stdout (console) as well as any custom handlers (see SystemOutHandler)
     public static boolean DEBUG_MODE = false;
@@ -113,7 +108,7 @@ public class Simulator implements Runnable, TimeSource {
     private static boolean monitorMessage = false;
 
 
-    private Visualizer3D visualizer;
+//    private Visualizer3D visualizer;
     private AbstractMulticopter vehicle;
     private CameraGimbal2D gimbal;
     private MAVLinkHILSystem hilSystem;
@@ -132,7 +127,7 @@ public class Simulator implements Runnable, TimeSource {
     private int slowDownCounter = 0;
     public volatile boolean shutdown = false;
 
-    public Simulator() throws IOException, InterruptedException {
+    public Headless() throws IOException, InterruptedException {
 
         // set up custom output handler for all System.out messages
         outputHandler = new SystemOutHandler(LOG_TO_STDOUT);
@@ -165,17 +160,17 @@ public class Simulator implements Runnable, TimeSource {
         //simpleEnvironment.setGroundLevel(0.0f);
         world.addObject(simpleEnvironment);
 
-        // Create GUI
-        System.out.println("Starting GUI...");  // this is the longest part of startup so let user know
-        visualizer = new Visualizer3D(world);
-        visualizer.setSimulator(this);
-        visualizer.setAAEnabled(GUI_ENABLE_AA);
-        if (GUI_START_MAXIMIZED) {
-            visualizer.setExtendedState(JFrame.MAXIMIZED_BOTH);
-        }
-
-        // add GUI output stream handler for displaying messages
-        outputHandler.addOutputStream(visualizer.getOutputStream());
+//         Create GUI
+//        System.out.println("Starting GUI...");  // this is the longest part of startup so let user know
+//        visualizer = new Visualizer3D(world);
+//        visualizer.setSimulator(this);
+//        visualizer.setAAEnabled(GUI_ENABLE_AA);
+//        if (GUI_START_MAXIMIZED) {
+//            visualizer.setExtendedState(JFrame.MAXIMIZED_BOTH);
+//        }
+//
+//        // add GUI output stream handler for displaying messages
+//        outputHandler.addOutputStream(visualizer.getOutputStream());
 
         MAVLinkSchema schema = null;
         try {
@@ -278,20 +273,20 @@ public class Simulator implements Runnable, TimeSource {
         if (USE_GIMBAL) {
             gimbal = buildGimbal();
             world.addObject(gimbal);
-            visualizer.setGimbalViewObject(gimbal);
+//            visualizer.setGimbalViewObject(gimbal);
         }
 
         // Create simulation report updater
-        world.addObject(new ReportUpdater(world, visualizer));
+        //TODO world.addObject(new ReportUpdater(world, visualizer));
 
-        visualizer.addWorldModels();
-        visualizer.setHilSystem(hilSystem);
-        visualizer.setVehicleViewObject(vehicle);
-
-        // set default view and zoom mode
-        visualizer.setViewType(GUI_START_VIEW);
-        visualizer.setZoomMode(GUI_START_ZOOM);
-        visualizer.toggleReportPanel(GUI_SHOW_REPORT_PANEL);
+//        visualizer.addWorldModels();
+//        visualizer.setHilSystem(hilSystem);
+//        visualizer.setVehicleViewObject(vehicle);
+//
+//        // set default view and zoom mode
+//        visualizer.setViewType(GUI_START_VIEW);
+//        visualizer.setZoomMode(GUI_START_ZOOM);
+//        visualizer.toggleReportPanel(GUI_SHOW_REPORT_PANEL);
 
         // Open ports
         try {
@@ -311,8 +306,10 @@ public class Simulator implements Runnable, TimeSource {
             }
         }
 
-        thisHandle = executor.scheduleAtFixedRate(this, 0, (int)(sleepInterval / speedFactor / checkFactor),
+        int scheduledRateMicros = (int)(sleepInterval / speedFactor / checkFactor);
+        thisHandle = executor.scheduleAtFixedRate(this, 0, scheduledRateMicros,
                                                   TimeUnit.MICROSECONDS);
+        System.out.println("scheduled at " + scheduledRateMicros + " microseconds");
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
@@ -460,7 +457,7 @@ public class Simulator implements Runnable, TimeSource {
      * If successful, returns a valid Vector3d() suitable for setting the magnetic field in the simulated environment.
      * Also displays the resulting vector so it can be copied to the DEFAULT_MAG_FIELD setting to avoid future lookups.
      *
-     * @param pos {@link me.drton.jmavlib.geo.LatLonAlt} object of reference point.
+     * @param pos {@link LatLonAlt} object of reference point.
      * @return Vector3d The magnetic field variance vector, or Vector3d(0,0,0) if lookup failed.
      */
     public static Vector3d magFieldLookup(LatLonAlt pos) {
@@ -561,7 +558,8 @@ public class Simulator implements Runnable, TimeSource {
                                               REP_STRING + "] [" +
                                               PRINT_INDICATION_STRING + "]";
 
-    public static void old_main(String[] args)
+
+    public static void main(String[] args)
     throws InterruptedException, IOException {
 
         int i = 0;
@@ -751,15 +749,15 @@ public class Simulator implements Runnable, TimeSource {
                 String t;
                 if (i < args.length) {
                     t = args[i++];
-                    if (t.equals("fpv")) {
-                        GUI_START_VIEW = ViewTypes.VIEW_FPV;
-                    } else if (t.equals("grnd")) {
-                        GUI_START_VIEW = ViewTypes.VIEW_STATIC;
-                    } else if (t.equals("gmbl")) {
-                        GUI_START_VIEW = ViewTypes.VIEW_GIMBAL;
-                    } else {
-                        System.out.println("Warning: Unrecognized value for -view option, ignoring.");
-                    }
+//                    if (t.equals("fpv")) {
+//                        GUI_START_VIEW = ViewTypes.VIEW_FPV;
+//                    } else if (t.equals("grnd")) {
+//                        GUI_START_VIEW = ViewTypes.VIEW_STATIC;
+//                    } else if (t.equals("gmbl")) {
+//                        GUI_START_VIEW = ViewTypes.VIEW_GIMBAL;
+//                    } else {
+//                        System.out.println("Warning: Unrecognized value for -view option, ignoring.");
+//                    }
                 } else {
                     System.err.println("-view requires an argument: " + GUI_VIEW_STRING);
                     return;
@@ -793,12 +791,14 @@ public class Simulator implements Runnable, TimeSource {
 
         System.out.println("Options parsed, starting Sim.");
 
-        SwingUtilities.invokeLater(new Simulator());
+//       // SwingUtilities.invokeLater(new Headless());
+        Headless instance = new Headless();
+        instance.run();
     }
 
     public static void handleHelpFlag() {
-        String viewType = (GUI_START_VIEW == ViewTypes.VIEW_FPV ? "fpv" : GUI_START_VIEW ==
-                           ViewTypes.VIEW_GIMBAL ? "gmbl" : "grnd");
+        String viewType = "wut" ; //(GUI_START_VIEW == ViewTypes.VIEW_FPV ? "fpv" : GUI_START_VIEW ==
+                          // ViewTypes.VIEW_GIMBAL ? "gmbl" : "grnd");
 
         System.out.println("\nUsage: " + USAGE_STRING + "\n");
         System.out.println("Command-line options:\n");

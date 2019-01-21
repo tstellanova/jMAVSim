@@ -97,9 +97,9 @@ public class TCPMavLinkPort extends MAVLinkPort {
 
     @Override
     public void handleMessage(MAVLinkMessage msg) {
-        if (debug) {
-            System.out.println("[handleMessage] msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
-        }
+//        if (debug) {
+//            System.out.println("[handleMessage] msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
+//        }
 
         if (isOpened()) {
             try {
@@ -155,9 +155,9 @@ public class TCPMavLinkPort extends MAVLinkPort {
                 if (msg == null) {
                     break;
                 }
-                if (debug) {
-                    System.out.println("[tcp] recvd msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
-                }
+//                if (debug) {
+//                    System.out.println("[tcp] recvd msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
+//                }
                 IndicateReceivedMessage(msg.getMsgType());
                 sendMessage(msg);
             } catch (IOException ignored) {

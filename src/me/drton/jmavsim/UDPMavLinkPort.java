@@ -140,9 +140,9 @@ public class UDPMavLinkPort extends MAVLinkPort {
                 if (msg == null) {
                     break;
                 }
-                if (debug) {
-                    System.out.println("[update] msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
-                }
+//                if (debug) {
+//                    System.out.println("[udp] msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
+//                }
                 IndicateReceivedMessage(msg.getMsgType());
                 sendMessage(msg);
             } catch (IOException e) {
